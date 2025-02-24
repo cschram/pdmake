@@ -26,7 +26,7 @@ expect(isTest())
 function pow(n, e)
   return n ^ e
 end
-]]##
+]]
 
 -- This should evaluate to the following metaprogram code:
 -- ```
