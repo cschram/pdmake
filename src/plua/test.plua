@@ -1,0 +1,63 @@
+-------------------------------------------------------------------------------
+-- Basic if/else structure
+-------------------------------------------------------------------------------
+
+-- This should evaluate to the following resulting code:
+-- ```
+-- function isTest()
+--   return true
+-- end
+-- ```
+## local test = true
+function isTest()
+  ## if test then
+  return true
+  ## else
+  return false
+  ## end
+end
+expect(isTest())
+
+-------------------------------------------------------------------------------
+-- Defining functions and inlining values
+-------------------------------------------------------------------------------
+
+##[[
+function pow(n, e)
+  return n ^ e
+end
+]]##
+
+-- This should evaluate to the following metaprogram code:
+-- ```
+-- __emit("expect(" .. (pow(2, 3) .. " == 8)")
+-- ```
+expect(#[pow(2, 3)]# == 8)
+
+-------------------------------------------------------------------------------
+-- Emitting code
+-------------------------------------------------------------------------------
+
+-- This should evaluate to the following metaprogram code:
+-- ```
+-- function increment(identifier, amount)
+--   __emit("  " .. (identifier) .. " = " .. (identifier) .. " + " .. (amount))
+-- end
+-- ```
+## function increment(identifier, amount)
+  #[identifier]# = #[identifier]# + #[amount]#
+## end
+
+-- This should evaluate to the following resulting code:
+-- ```
+-- do
+--   local v = 1
+--   v = v + 2
+--   expect(v == 3)
+-- end
+-- ```
+do
+  local v = 1
+  ## increment("v", 2)
+  expect(v == 3)
+end
