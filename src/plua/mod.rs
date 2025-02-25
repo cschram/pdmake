@@ -1,22 +1,36 @@
+// mod parser;
+
 use anyhow::Result;
 use mlua::{IntoLua, Lua};
-use std::fs::File;
-use std::io::BufReader;
+use std::path::Path;
 
-pub struct Preprocessor {
+pub struct Plua {
     ctx: Lua,
 }
 
-impl Preprocessor {
+impl Plua {
     pub fn new() -> Self {
-        Preprocessor { ctx: Lua::new() }
+        Self { ctx: Lua::new() }
     }
 
     pub fn set_global(&self, name: impl IntoLua, value: impl IntoLua) -> Result<()> {
-        self.ctx.global().set(name, value)
+        self.ctx.globals().set(name, value)?;
+        Ok(())
     }
 
-    pub fn process<'a>(&'a self, name: &str, reader: &BufReader<File>) -> Result<MetaProgram<'a>> {}
+    pub fn preprocess<P: AsRef<Path>>(&self, source: P, destination: P) -> Result<PluaMetaProgram> {
+        Ok(PluaMetaProgram::new())
+    }
 }
 
-pub struct MetaProgram<'a> {}
+pub struct PluaMetaProgram {}
+
+impl PluaMetaProgram {
+    fn new() -> Self {
+        Self {}
+    }
+
+    pub fn compile() -> Result<String> {
+        unimplemented!()
+    }
+}

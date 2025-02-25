@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.96"
-mlua = { version = "0.10.3", features = ["lua54"] }
+glob = "0.3.2"
+mlua = { version = "0.10.3", features = ["lua54", "vendored", "send"] }
 pest = "2.7.15"
 pest_derive = "2.7.15"
 serde = { version = "1.0.218", features = ["derive"] }

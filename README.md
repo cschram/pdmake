@@ -4,7 +4,7 @@ pdmake is an in-development toolchain for Playdate development in Lua.
 
 ## Planned Features
 
-- [ ] TOML based configuration
+- [x] TOML based configuration
 - [ ] Dependency management
     - [ ] Git repositories as a source
     - [ ] Convert standard Lua packages to be compatable with Playdate flavored Lua (`import` instead of `require`)
