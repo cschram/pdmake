@@ -16,6 +16,7 @@ pdmake is an in-development toolchain for Playdate development in Lua.
     - [ ] Lua preprocessor based loosely on [nelua's preprocessor](https://nelua.io/overview/#preprocessor)
     - [ ] Transform relative paths in imports to absolute paths
     - [ ] Debug and Release builds
+    - [ ] Unit testing
     - [ ] Playdate and Preprocessor aware formatting and linting
 - [ ] Release management:
     - [ ] Generate `pdxinfo`
