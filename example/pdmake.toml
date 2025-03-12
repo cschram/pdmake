@@ -9,6 +9,9 @@ sequence = "https://github.com/NicMagnier/PlaydateSequence.git"
 pdparticles = "https://github.com/PossiblyAxolotl/pdParticles.git@release"
 lume = "https://github.com/rxi/lume.git"
 
+[build]
+aseprite_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe"
+
 [build.directories]
 src = "src"
 assets = "assets"

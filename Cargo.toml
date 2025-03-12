@@ -5,9 +5,11 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.96"
+clap = { version = "4.5.31", features = ["derive"] }
+clap_derive = "4.5.32"
 glob = "0.3.2"
-mlua = { version = "0.10.3", features = ["lua54", "vendored", "send"] }
-pest = "2.7.15"
-pest_derive = "2.7.15"
 serde = { version = "1.0.218", features = ["derive"] }
 toml = "0.8.20"
+plua = "0.1.0"
+stylua = { version = "2.0.2", features = ["lua54"] }
+walkdir = "2.5.0"

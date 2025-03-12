@@ -4,41 +4,42 @@ use std::collections::HashMap;
 use toml::Value;
 
 #[derive(Deserialize)]
-pub struct PDMakeConfig {
-    pub name: String,
-    pub author: String,
-    pub description: String,
-    pub bundle_id: String,
-    pub version: String,
+pub(crate) struct Config {
+    pub(crate) name: String,
+    pub(crate) author: String,
+    pub(crate) description: String,
+    pub(crate) bundle_id: String,
+    pub(crate) version: String,
     #[serde(default)]
-    pub dependencies: PDMakeConfigDependencies,
+    pub(crate) dependencies: ConfigDependencies,
     #[serde(default)]
-    pub build: PDMakeConfigBuild,
+    pub(crate) build: ConfigBuild,
 }
 
-impl PDMakeConfig {
-    pub fn parse(source: &str) -> Result<Self> {
+impl Config {
+    pub(crate) fn parse(source: &str) -> Result<Self> {
         let config: Self = toml::from_str(source)?;
         Ok(config)
     }
 }
 
-pub type PDMakeConfigDependencies = HashMap<String, String>;
+pub(crate) type ConfigDependencies = HashMap<String, String>;
 
 #[derive(Deserialize, Default)]
-pub struct PDMakeConfigBuild {
-    pub directories: PDMakeConfigBuildDirectories,
-    pub environment: PDMakeConfigBuildEnvironment,
+pub(crate) struct ConfigBuild {
+    pub(crate) directories: ConfigBuildDirectories,
+    pub(crate) environment: ConfigBuildEnvironment,
+    pub(crate) aseprite_path: Option<String>,
 }
 
 #[derive(Deserialize)]
-pub struct PDMakeConfigBuildDirectories {
+pub(crate) struct ConfigBuildDirectories {
     #[serde(default = "default_directories_src")]
-    pub src: String,
+    pub(crate) src: String,
     #[serde(default = "default_directories_assets")]
-    pub assets: String,
+    pub(crate) assets: String,
     #[serde(default = "default_directories_target")]
-    pub target: String,
+    pub(crate) target: String,
 }
 
 fn default_directories_src() -> String {
@@ -53,7 +54,7 @@ fn default_directories_target() -> String {
     "target".to_owned()
 }
 
-impl Default for PDMakeConfigBuildDirectories {
+impl Default for ConfigBuildDirectories {
     fn default() -> Self {
         Self {
             src: default_directories_src(),
@@ -63,7 +64,7 @@ impl Default for PDMakeConfigBuildDirectories {
     }
 }
 
-pub type PDMakeConfigBuildEnvironment = HashMap<String, Value>;
+pub(crate) type ConfigBuildEnvironment = HashMap<String, Value>;
 
 #[cfg(test)]
 mod test {
@@ -71,7 +72,7 @@ mod test {
 
     #[test]
     fn parse() -> Result<()> {
-        let config = PDMakeConfig::parse(
+        let config = Config::parse(
             r#"
 name = "PDMake Example"
 author = "John Playdate"
@@ -114,7 +115,7 @@ playdate = "awesome"
 
     #[test]
     fn parse_defaults() -> Result<()> {
-        let config = PDMakeConfig::parse(
+        let config = Config::parse(
             r#"
 name = "PDMake Example"
 author = "John Playdate"
