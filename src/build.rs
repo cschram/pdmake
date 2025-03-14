@@ -7,7 +7,8 @@ use glob::glob;
 use plua::Plua;
 use std::{
     collections::HashMap,
-    fs, io,
+    fs,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::Command,
 };
@@ -204,7 +205,7 @@ buildNumber=1
     }
 
     fn compile(&'a self) -> Result<()> {
-        Command::new(PDC_NAME)
+        let output = Command::new(PDC_NAME)
             .args([
                 "-q",
                 self.build_dir.to_str().unwrap(),
@@ -212,6 +213,9 @@ buildNumber=1
             ])
             .output()
             .context("Error compiling pdx")?;
+        if !output.status.success() {
+            io::stderr().write_all(&output.stderr)?;
+        }
         Ok(())
     }
 }

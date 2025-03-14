@@ -8,7 +8,7 @@ test:
 
 [working-directory: "example"]
 example: build
-  ../target/debug/pdmake build
+  ../target/debug/pdmake build --debug
   ../target/debug/pdmake run
 
 [working-directory: "example"]
