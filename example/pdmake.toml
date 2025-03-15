@@ -4,11 +4,6 @@ description = "Example pdmake project"
 bundle_id = "com.pdmake.Example"
 version = "1.0"
 
-[dependencies]
-sequence = "https://github.com/NicMagnier/PlaydateSequence.git"
-pdparticles = "https://github.com/PossiblyAxolotl/pdParticles.git@release"
-lume = "https://github.com/rxi/lume.git"
-
 [build]
 aseprite_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe"
 
@@ -16,6 +11,3 @@ aseprite_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aseprite\\As
 src = "src"
 assets = "assets"
 target = "target"
-
-[build.environment]
-playdate = "awesome"

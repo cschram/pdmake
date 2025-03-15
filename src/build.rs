@@ -1,5 +1,6 @@
 use crate::{
     config::Config,
+    exec::exec,
     processors::{AsepriteProcessor, AssetProcessor},
 };
 use anyhow::{Context, Error, Result};
@@ -7,10 +8,8 @@ use glob::glob;
 use plua::Plua;
 use std::{
     collections::HashMap,
-    fs,
-    io::{self, Write},
+    fs, io,
     path::{Path, PathBuf},
-    process::Command,
 };
 use walkdir::WalkDir;
 
@@ -130,8 +129,21 @@ impl<'a> Builder<'a> {
             let compiled = self
                 .plua
                 .exec(&prog)
-                .with_context(|| format!("Error executing {} metaprogram", source_str))?;
-            Self::write_lua(destination.to_str().unwrap(), &compiled)?;
+                .with_context(|| format!("Error executing {} metaprogram", source_str));
+            if self.debug {
+                match compiled {
+                    Ok(compiled) => {
+                        Self::write_lua(destination.to_str().unwrap(), &compiled)?;
+                    }
+                    Err(_) => {
+                        let mut meta_dest = destination.clone();
+                        meta_dest.set_extension("meta.lua");
+                        Self::write_lua(meta_dest.to_str().unwrap(), &prog.metaprogram)?;
+                    }
+                }
+            } else {
+                Self::write_lua(destination.to_str().unwrap(), &compiled?)?;
+            }
         }
         Ok(())
     }
@@ -205,17 +217,14 @@ buildNumber=1
     }
 
     fn compile(&'a self) -> Result<()> {
-        let output = Command::new(PDC_NAME)
-            .args([
+        exec(
+            PDC_NAME,
+            &[
                 "-q",
                 self.build_dir.to_str().unwrap(),
                 self.pdx_dir.to_str().unwrap(),
-            ])
-            .output()
-            .context("Error compiling pdx")?;
-        if !output.status.success() {
-            io::stderr().write_all(&output.stderr)?;
-        }
+            ],
+        )?;
         Ok(())
     }
 }

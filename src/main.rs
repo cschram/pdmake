@@ -1,11 +1,12 @@
 mod build;
 mod config;
+mod exec;
 mod processors;
 
-use crate::{build::Builder, config::Config};
+use crate::{build::Builder, config::Config, exec::exec};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use std::{fs, path::PathBuf, process};
+use std::{fs, path::PathBuf};
 
 #[cfg(target_os = "macos")]
 const SIMULATOR_NAME: &'static stsr = "Playdate Simulator.app";
@@ -60,10 +61,7 @@ fn main() -> Result<()> {
             let mut pdx_path = PathBuf::new();
             pdx_path.push(config.build.directories.target);
             pdx_path.push(format!("{}.pdx", config.bundle_id));
-            process::Command::new(SIMULATOR_NAME)
-                .args([pdx_path.to_str().unwrap()])
-                .output()
-                .context("Failed to open simulator")?;
+            exec(SIMULATOR_NAME, &[pdx_path.to_str().unwrap()])?;
         }
     }
 

@@ -1,7 +1,6 @@
-use crate::config::Config;
-use anyhow::{Context, Result};
+use crate::{config::Config, exec::exec};
+use anyhow::Result;
 use std::path::PathBuf;
-use std::process::Command;
 
 pub(crate) trait AssetProcessor {
     fn process(&self, config: &Config, source: &str, destination: &str) -> Result<()>;
@@ -20,16 +19,15 @@ impl AssetProcessor for AsepriteProcessor {
         let mut dest = PathBuf::new();
         dest.push(destination);
         dest.set_extension("png");
-        Command::new(
+        exec(
             &config
                 .build
                 .aseprite_path
                 .clone()
                 .unwrap_or_else(|| ASEPRITE_NAME.to_string()),
-        )
-        .args(["-b", source, "--save-as", dest.as_path().to_str().unwrap()])
-        .output()
-        .with_context(|| format!("Error processing aseprite file {}", source))?;
+            &["-b", source, "--save-as", dest.as_path().to_str().unwrap()],
+        )?;
+
         Ok(())
     }
 }

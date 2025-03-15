@@ -2,32 +2,29 @@ import("CoreLibs/object")
 import("CoreLibs/graphics")
 import("CoreLibs/sprites")
 
-local pd <const> = playdate
-
-local character = pd.graphics.sprite.new(pd.graphics.image.new("playdate.png"))
-character:moveTo(
-    200 - (character.width / 2),
-    120 - (character.height / 2)
-)
+local character = playdate.graphics.sprite.new(playdate.graphics.image.new("playdate.png"))
+character:moveTo(200, 120)
 character:add()
 
-local characterSpeed <const> = 50
+local characterSpeed <const> = 10
 
-pd.update = function()
-    if pd.buttonJustPressed(pd.kButtonUp) then
+playdate.update = function()
+    playdate.graphics.sprite.update()
+
+    if playdate.buttonIsPressed(playdate.kButtonUp) then
         character:moveTo(character.x, character.y - characterSpeed)
-    elseif pd.buttonJustPressed(pd.kButtonDown) then
+    elseif playdate.buttonIsPressed(playdate.kButtonDown) then
         character:moveTo(character.x, character.y + characterSpeed)
     end
-    if pd.buttonJustPressed(pd.kButtonLeft) then
+    if playdate.buttonIsPressed(playdate.kButtonLeft) then
         character:moveTo(character.x - characterSpeed, character.y)
-    elseif pd.buttonJustPressed(pd.kButtonRight) then
+    elseif playdate.buttonIsPressed(playdate.kButtonRight) then
         character:moveTo(character.x + characterSpeed, character.y)
     end
 
     ##if debug then
-        pd.graphics.drawText("Debug Mode", 0, 0)
+        playdate.graphics.drawText("Debug Mode", 10, 10)
     ##else
-        pd.graphics.drawText("Release Mode", 0, 0)
+        playdate.graphics.drawText("Release Mode", 10, 10)
     ##end
 end
