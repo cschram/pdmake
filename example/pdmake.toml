@@ -4,10 +4,3 @@ description = "Example pdmake project"
 bundle_id = "com.pdmake.Example"
 version = "1.0"
 
-[build]
-aseprite_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe"
-
-[build.directories]
-src = "src"
-assets = "assets"
-target = "target"

@@ -4,16 +4,19 @@ mod exec;
 mod processors;
 
 use crate::{build::Builder, config::Config, exec::exec};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
 use std::{fs, path::PathBuf};
 
 #[cfg(target_os = "macos")]
-const SIMULATOR_NAME: &'static stsr = "Playdate Simulator.app";
+use crate::exec::find_osx_app;
+
+#[cfg(target_os = "macos")]
+const SIMULATOR: &'static str = "Playdate Simulator.app";
 #[cfg(all(unix, not(target_os = "macos")))]
-const SIMULATOR_NAME: &'static str = "playdatesimulator";
+const SIMULATOR: &'static str = "playdatesimulator";
 #[cfg(windows)]
-const SIMULATOR_NAME: &'static str = "PlaydateSimulator.exe";
+const SIMULATOR: &'static str = "PlaydateSimulator.exe";
 
 #[derive(Parser)]
 #[command(name = "pdmake")]
@@ -42,6 +45,21 @@ enum Commands {
     Run,
 }
 
+#[cfg(target_os = "macos")]
+fn run(pdx_path: &str) -> Result<()> {
+    let app_path =
+        find_osx_app(SIMULATOR).ok_or_else(|| anyhow!("Unable to find {}", SIMULATOR))?;
+    let mut path = PathBuf::new();
+    path.push(app_path);
+    path.push("Contents/MacOS/Playdate Simulator");
+    exec(path.to_str().unwrap(), &[pdx_path])
+}
+
+#[cfg(not(target_os = "macos"))]
+fn run(pdx_path: &str) -> Result<()> {
+    exec(SIMULATOR_NAME, &[pdx_path])
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let config = {
@@ -55,13 +73,13 @@ fn main() -> Result<()> {
             Builder::build(&config, *debug).context("Error building")?;
         }
         Commands::Clean => {
-            fs::remove_dir_all(&config.build.directories.target)?;
+            fs::remove_dir_all(&config.directories.target)?;
         }
         Commands::Run => {
             let mut pdx_path = PathBuf::new();
-            pdx_path.push(config.build.directories.target);
+            pdx_path.push(config.directories.target);
             pdx_path.push(format!("{}.pdx", config.bundle_id));
-            exec(SIMULATOR_NAME, &[pdx_path.to_str().unwrap()])?;
+            run(pdx_path.to_str().unwrap())?;
         }
     }
 

@@ -14,9 +14,9 @@ use std::{
 use walkdir::WalkDir;
 
 #[cfg(unix)]
-const PDC_NAME: &'static str = "pdc";
+const PDC: &'static str = "pdc";
 #[cfg(windows)]
-const PDC_NAME: &'static str = "pdc.exe";
+const PDC: &'static str = "pdc.exe";
 
 pub(crate) struct Builder<'a> {
     config: &'a Config,
@@ -30,11 +30,11 @@ pub(crate) struct Builder<'a> {
 impl<'a> Builder<'a> {
     pub(crate) fn new(config: &'a Config, debug: bool) -> Result<Self> {
         let mut build_dir = PathBuf::new();
-        build_dir.push(&config.build.directories.target);
+        build_dir.push(&config.directories.target);
         build_dir.push(if debug { "debug" } else { "release" });
 
         let mut pdx_dir = PathBuf::new();
-        pdx_dir.push(&config.build.directories.target);
+        pdx_dir.push(&config.directories.target);
         pdx_dir.push(format!("{}.pdx", config.bundle_id));
 
         let mut plua = Plua::new()?;
@@ -105,18 +105,17 @@ impl<'a> Builder<'a> {
     }
 
     fn build_source(&'a self) -> Result<()> {
-        for entry in glob(&format!("{}/**/*.lua", self.config.build.directories.src))? {
+        for entry in glob(&format!("{}/**/*.lua", self.config.directories.src))? {
             let source = entry?;
-            let destination = self.destination_path(&source, &self.config.build.directories.src)?;
+            let destination = self.destination_path(&source, &self.config.directories.src)?;
 
             self.ensure_dir_exists(&destination.parent().unwrap())?;
 
             fs::copy(source, destination)?;
         }
-        for entry in glob(&format!("{}/**/*.plua", self.config.build.directories.src))? {
+        for entry in glob(&format!("{}/**/*.plua", self.config.directories.src))? {
             let source = entry?;
-            let mut destination =
-                self.destination_path(&source, &self.config.build.directories.src)?;
+            let mut destination = self.destination_path(&source, &self.config.directories.src)?;
             destination.set_extension("lua");
 
             self.ensure_dir_exists(&destination.parent().unwrap())?;
@@ -149,7 +148,7 @@ impl<'a> Builder<'a> {
     }
 
     fn process_assets(&'a self) -> Result<()> {
-        for entry in WalkDir::new(&self.config.build.directories.assets) {
+        for entry in WalkDir::new(&self.config.directories.assets) {
             let mut source_pathbuf = PathBuf::new();
             source_pathbuf.push(entry.unwrap().path());
             let source_path = source_pathbuf.as_path();
@@ -157,7 +156,7 @@ impl<'a> Builder<'a> {
 
             if !source_path.is_dir() {
                 let dest_path =
-                    self.destination_path(source_path_str, &self.config.build.directories.assets)?;
+                    self.destination_path(source_path_str, &self.config.directories.assets)?;
                 self.ensure_dir_exists(&dest_path.parent().unwrap())?;
 
                 match source_path
@@ -166,17 +165,11 @@ impl<'a> Builder<'a> {
                     .flatten()
                 {
                     Some(processor) => {
-                        processor.process(
-                            &self.config,
-                            source_path_str,
-                            dest_path.to_str().unwrap(),
-                        )?;
+                        processor.process(source_path_str, dest_path.to_str().unwrap())?;
                     }
                     None => {
-                        let dest_path = self.destination_path(
-                            &source_path,
-                            &self.config.build.directories.assets,
-                        )?;
+                        let dest_path =
+                            self.destination_path(&source_path, &self.config.directories.assets)?;
 
                         fs::copy(&source_path, &dest_path).with_context(|| {
                             format!(
@@ -218,7 +211,7 @@ buildNumber=1
 
     fn compile(&'a self) -> Result<()> {
         exec(
-            PDC_NAME,
+            PDC,
             &[
                 "-q",
                 self.build_dir.to_str().unwrap(),

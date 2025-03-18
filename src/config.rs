@@ -9,7 +9,7 @@ pub(crate) struct Config {
     pub(crate) bundle_id: String,
     pub(crate) version: String,
     #[serde(default)]
-    pub(crate) build: ConfigBuild,
+    pub(crate) directories: ConfigDirectories,
 }
 
 impl Config {
@@ -19,14 +19,8 @@ impl Config {
     }
 }
 
-#[derive(Deserialize, Default)]
-pub(crate) struct ConfigBuild {
-    pub(crate) directories: ConfigBuildDirectories,
-    pub(crate) aseprite_path: Option<String>,
-}
-
 #[derive(Deserialize)]
-pub(crate) struct ConfigBuildDirectories {
+pub(crate) struct ConfigDirectories {
     #[serde(default = "default_directories_src")]
     pub(crate) src: String,
     #[serde(default = "default_directories_assets")]
@@ -47,7 +41,7 @@ fn default_directories_target() -> String {
     "target".to_owned()
 }
 
-impl Default for ConfigBuildDirectories {
+impl Default for ConfigDirectories {
     fn default() -> Self {
         Self {
             src: default_directories_src(),
@@ -71,7 +65,7 @@ description = "Example pdmake project"
 bundle_id = "com.pdmake.Example"
 version = "1.0"
 
-[build.directories]
+[directories]
 src = "src"
 assets = "assets"
 target = "target"
@@ -83,9 +77,9 @@ target = "target"
         assert_eq!(config.description, "Example pdmake project");
         assert_eq!(config.bundle_id, "com.pdmake.Example");
         assert_eq!(config.version, "1.0");
-        assert_eq!(config.build.directories.src, "src");
-        assert_eq!(config.build.directories.assets, "assets");
-        assert_eq!(config.build.directories.target, "target");
+        assert_eq!(config.directories.src, "src");
+        assert_eq!(config.directories.assets, "assets");
+        assert_eq!(config.directories.target, "target");
 
         Ok(())
     }
