@@ -10,11 +10,11 @@ pub(crate) trait AssetProcessor {
 }
 
 #[cfg(target_os = "macos")]
-const ASEPRITE: &'static str = "Aseprite.app";
+const ASEPRITE: &str = "Aseprite.app";
 #[cfg(all(unix, not(target_os = "macos")))]
-const ASEPRITE: &'static str = "aseprite";
+const ASEPRITE: &str = "aseprite";
 #[cfg(windows)]
-const ASEPRITE: &'static str = "aseprite.exe";
+const ASEPRITE: &str = "aseprite.exe";
 #[derive(Clone)]
 pub(crate) struct AsepriteProcessor;
 

@@ -14,9 +14,9 @@ use std::{
 use walkdir::WalkDir;
 
 #[cfg(unix)]
-const PDC: &'static str = "pdc";
+const PDC: &str = "pdc";
 #[cfg(windows)]
-const PDC: &'static str = "pdc.exe";
+const PDC: &str = "pdc.exe";
 
 pub(crate) struct Builder<'a> {
     config: &'a Config,
@@ -109,7 +109,7 @@ impl<'a> Builder<'a> {
             let source = entry?;
             let destination = self.destination_path(&source, &self.config.directories.src)?;
 
-            self.ensure_dir_exists(&destination.parent().unwrap())?;
+            self.ensure_dir_exists(destination.parent().unwrap())?;
 
             fs::copy(source, destination)?;
         }
@@ -118,12 +118,12 @@ impl<'a> Builder<'a> {
             let mut destination = self.destination_path(&source, &self.config.directories.src)?;
             destination.set_extension("lua");
 
-            self.ensure_dir_exists(&destination.parent().unwrap())?;
+            self.ensure_dir_exists(destination.parent().unwrap())?;
 
             let source_str = source.to_str().unwrap();
-            let contents = fs::read_to_string(&source_str)
+            let contents = fs::read_to_string(source_str)
                 .with_context(|| format!("Error reading {}", source_str))?;
-            let prog = Plua::compile(&source_str, &contents)
+            let prog = Plua::compile(source_str, &contents)
                 .with_context(|| format!("Error compiling {} metaprogram", source_str))?;
             let compiled = self
                 .plua
@@ -157,21 +157,20 @@ impl<'a> Builder<'a> {
             if !source_path.is_dir() {
                 let dest_path =
                     self.destination_path(source_path_str, &self.config.directories.assets)?;
-                self.ensure_dir_exists(&dest_path.parent().unwrap())?;
+                self.ensure_dir_exists(dest_path.parent().unwrap())?;
 
                 match source_path
                     .extension()
-                    .map(|ext| self.processors.get(ext.to_str().unwrap()))
-                    .flatten()
+                    .and_then(|ext| self.processors.get(ext.to_str().unwrap()))
                 {
                     Some(processor) => {
                         processor.process(source_path_str, dest_path.to_str().unwrap())?;
                     }
                     None => {
                         let dest_path =
-                            self.destination_path(&source_path, &self.config.directories.assets)?;
+                            self.destination_path(source_path, &self.config.directories.assets)?;
 
-                        fs::copy(&source_path, &dest_path).with_context(|| {
+                        fs::copy(source_path, &dest_path).with_context(|| {
                             format!(
                                 "Failed to copy {} to {}",
                                 &source_path.to_str().unwrap(),

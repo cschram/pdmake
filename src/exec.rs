@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use log::{error, info};
 use std::{env, process::Command};
 
 pub(crate) fn exec(cmd: &str, args: &[&str]) -> Result<()> {
-    let output = Command::new(&cmd).args(args).output()?;
+    let output = Command::new(cmd).args(args).output()?;
     if output.status.success() {
         info!("{}", String::from_utf8(output.stdout)?);
     } else {

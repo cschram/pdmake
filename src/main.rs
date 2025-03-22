@@ -12,11 +12,11 @@ use std::{fs, path::PathBuf};
 use crate::exec::find_osx_app;
 
 #[cfg(target_os = "macos")]
-const SIMULATOR: &'static str = "Playdate Simulator.app";
+const SIMULATOR: &str = "Playdate Simulator.app";
 #[cfg(all(unix, not(target_os = "macos")))]
-const SIMULATOR: &'static str = "playdatesimulator";
+const SIMULATOR: &str = "playdatesimulator";
 #[cfg(windows)]
-const SIMULATOR: &'static str = "PlaydateSimulator.exe";
+const SIMULATOR: &str = "PlaydateSimulator.exe";
 
 #[derive(Parser)]
 #[command(name = "pdmake")]
@@ -73,7 +73,9 @@ fn main() -> Result<()> {
             Builder::build(&config, *debug).context("Error building")?;
         }
         Commands::Clean => {
-            fs::remove_dir_all(&config.directories.target)?;
+            if fs::exists(&config.directories.target)? {
+                fs::remove_dir_all(&config.directories.target)?;
+            }
         }
         Commands::Run => {
             let mut pdx_path = PathBuf::new();
