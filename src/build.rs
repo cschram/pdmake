@@ -1,9 +1,10 @@
 use crate::{
     config::Config,
-    exec::exec,
     processors::{AsepriteProcessor, AssetProcessor, PluaProcessor},
 };
 use anyhow::{Context, Error, Result};
+use duct::cmd;
+use log::{error, info};
 use std::{
     collections::HashMap,
     fs, io,
@@ -137,14 +138,21 @@ buildNumber=1
     }
 
     fn compile(&'a self) -> Result<()> {
-        exec(
+        let output = cmd!(
             PDC,
-            &[
-                "-q",
-                self.target.to_str().unwrap(),
-                self.pdx.to_str().unwrap(),
-            ],
-        )?;
+            "-q",
+            self.target.to_str().unwrap(),
+            self.pdx.to_str().unwrap(),
+        )
+        .stdout_capture()
+        .stderr_capture()
+        .run()?;
+        if output.stdout.len() > 0 {
+            info!("[pdc] {}", String::from_utf8(output.stdout)?);
+        }
+        if output.stderr.len() > 0 {
+            error!("[pdc] {}", String::from_utf8(output.stderr)?);
+        }
         Ok(())
     }
 }

@@ -1,16 +1,16 @@
 mod build;
 mod config;
-mod exec;
 mod processors;
 
-use crate::{build::Builder, config::Config, exec::exec};
+use crate::{build::Builder, config::Config};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use duct::cmd;
 use simple_logger::SimpleLogger;
 use std::{fs, path::PathBuf};
 
 #[cfg(target_os = "macos")]
-use crate::exec::find_osx_app;
+use anyhow::anyhow;
 
 #[cfg(target_os = "macos")]
 const SIMULATOR: &str = "Playdate Simulator.app";
@@ -47,18 +47,36 @@ enum Commands {
 }
 
 #[cfg(target_os = "macos")]
+pub fn find_osx_app(app: &str) -> Option<String> {
+    let path_env = env::var_os("PATH")?;
+    for path in env::split_paths(&path_env) {
+        let mut app_path = path.clone();
+        app_path.push(app);
+        if app_path.as_path().try_exists().ok()? {
+            return Some(app_path.to_str().unwrap().to_string());
+        }
+    }
+    None
+}
+
+#[cfg(target_os = "macos")]
 fn run(pdx_path: &str) -> Result<()> {
     let app_path =
         find_osx_app(SIMULATOR).ok_or_else(|| anyhow!("Unable to find {}", SIMULATOR))?;
     let mut path = PathBuf::new();
     path.push(app_path);
     path.push("Contents/MacOS/Playdate Simulator");
-    exec(path.to_str().unwrap(), &[pdx_path])
+    run_spawn(path.to_str().unwrap(), pdx_path)
 }
 
 #[cfg(not(target_os = "macos"))]
 fn run(pdx_path: &str) -> Result<()> {
-    exec(SIMULATOR, &[pdx_path])
+    run_spawn(SIMULATOR, pdx_path)
+}
+
+fn run_spawn(sim_path: &str, pdx_path: &str) -> Result<()> {
+    cmd!(sim_path, pdx_path).run()?;
+    Ok(())
 }
 
 fn main() -> Result<()> {

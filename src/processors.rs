@@ -1,5 +1,6 @@
-use crate::exec::exec;
 use anyhow::{Context, Result};
+use duct::cmd;
+use log::{error, info};
 use plua::Plua;
 use std::{fs, path::PathBuf};
 
@@ -107,5 +108,15 @@ fn run_aseprite(source: &str, dest: &str) -> Result<()> {
 
 #[cfg(not(target_os = "macos"))]
 fn run_aseprite(source: &str, dest: &str) -> Result<()> {
-    exec(ASEPRITE, &["-b", source, "--save-as", dest])
+    let output = cmd!(ASEPRITE, "-b", source, "--save-as", dest)
+        .stdout_capture()
+        .stderr_capture()
+        .run()?;
+    if output.stdout.len() > 0 {
+        info!("[aseprite] {}", String::from_utf8(output.stdout)?);
+    }
+    if output.stderr.len() > 0 {
+        error!("[aseprite] {}", String::from_utf8(output.stderr)?);
+    }
+    Ok(())
 }
