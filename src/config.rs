@@ -9,7 +9,7 @@ pub(crate) struct Config {
     pub(crate) bundle_id: String,
     pub(crate) version: String,
     #[serde(default)]
-    pub(crate) directories: ConfigDirectories,
+    pub(crate) build: ConfigBuild,
 }
 
 impl Config {
@@ -20,32 +20,25 @@ impl Config {
 }
 
 #[derive(Deserialize)]
-pub(crate) struct ConfigDirectories {
-    #[serde(default = "default_directories_src")]
-    pub(crate) src: String,
-    #[serde(default = "default_directories_assets")]
-    pub(crate) assets: String,
+pub(crate) struct ConfigBuild {
+    #[serde(default = "default_directories_source")]
+    pub(crate) source: String,
     #[serde(default = "default_directories_target")]
     pub(crate) target: String,
 }
 
-fn default_directories_src() -> String {
-    "src".to_owned()
-}
-
-fn default_directories_assets() -> String {
-    "assets".to_owned()
+fn default_directories_source() -> String {
+    "source".to_owned()
 }
 
 fn default_directories_target() -> String {
     "target".to_owned()
 }
 
-impl Default for ConfigDirectories {
+impl Default for ConfigBuild {
     fn default() -> Self {
         Self {
-            src: default_directories_src(),
-            assets: default_directories_assets(),
+            source: default_directories_source(),
             target: default_directories_target(),
         }
     }
@@ -65,10 +58,9 @@ description = "Example pdmake project"
 bundle_id = "com.pdmake.Example"
 version = "1.0"
 
-[directories]
-src = "src"
-assets = "assets"
-target = "target"
+[build]
+source = "alt_source"
+target = "alt_target"
             "#,
         )?;
 
@@ -77,9 +69,8 @@ target = "target"
         assert_eq!(config.description, "Example pdmake project");
         assert_eq!(config.bundle_id, "com.pdmake.Example");
         assert_eq!(config.version, "1.0");
-        assert_eq!(config.directories.src, "src");
-        assert_eq!(config.directories.assets, "assets");
-        assert_eq!(config.directories.target, "target");
+        assert_eq!(config.build.source, "alt_source");
+        assert_eq!(config.build.target, "alt_target");
 
         Ok(())
     }
@@ -101,9 +92,8 @@ version = "1.0"
         assert_eq!(config.description, "Example pdmake project");
         assert_eq!(config.bundle_id, "com.pdmake.Example");
         assert_eq!(config.version, "1.0");
-        assert_eq!(config.build.directories.src, "src");
-        assert_eq!(config.build.directories.assets, "assets");
-        assert_eq!(config.build.directories.target, "target");
+        assert_eq!(config.build.source, "source");
+        assert_eq!(config.build.target, "target");
 
         Ok(())
     }

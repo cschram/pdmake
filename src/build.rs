@@ -1,11 +1,9 @@
 use crate::{
     config::Config,
     exec::exec,
-    processors::{AsepriteProcessor, AssetProcessor},
+    processors::{AsepriteProcessor, AssetProcessor, PluaProcessor},
 };
 use anyhow::{Context, Error, Result};
-use glob::glob;
-use plua::Plua;
 use std::{
     collections::HashMap,
     fs, io,
@@ -13,55 +11,49 @@ use std::{
 };
 use walkdir::WalkDir;
 
-#[cfg(unix)]
+#[cfg(not(windows))]
 const PDC: &str = "pdc";
 #[cfg(windows)]
 const PDC: &str = "pdc.exe";
 
 pub(crate) struct Builder<'a> {
     config: &'a Config,
-    debug: bool,
-    build_dir: PathBuf,
-    pdx_dir: PathBuf,
-    plua: Plua,
+    _debug: bool,
+    target: PathBuf,
+    pdx: PathBuf,
     processors: HashMap<String, Box<dyn AssetProcessor>>,
 }
 
 impl<'a> Builder<'a> {
     pub(crate) fn new(config: &'a Config, debug: bool) -> Result<Self> {
-        let mut build_dir = PathBuf::new();
-        build_dir.push(&config.directories.target);
-        build_dir.push(if debug { "debug" } else { "release" });
+        let mut target = PathBuf::new();
+        target.push(&config.build.target);
+        target.push(if debug { "debug" } else { "release" });
 
-        let mut pdx_dir = PathBuf::new();
-        pdx_dir.push(&config.directories.target);
-        pdx_dir.push(format!("{}.pdx", config.bundle_id));
-
-        let mut plua = Plua::new()?;
-        plua.set_global("debug", debug)?;
+        let mut pdx = PathBuf::new();
+        pdx.push(&config.build.target);
+        pdx.push(format!("{}.pdx", config.bundle_id));
 
         let mut processors = HashMap::<String, Box<dyn AssetProcessor>>::new();
         let aseprite = Box::new(AsepriteProcessor {});
         processors.insert("ase".to_string(), aseprite.clone());
         processors.insert("aseprite".to_string(), aseprite.clone());
+        let plua = Box::new(PluaProcessor::new(debug)?);
+        processors.insert("plua".to_string(), plua);
 
         Ok(Self {
             config,
-            debug,
-            build_dir,
-            pdx_dir,
-            plua,
+            _debug: debug,
+            target,
+            pdx,
             processors,
         })
     }
 
     pub(crate) fn build(config: &'a Config, debug: bool) -> Result<()> {
         let builder = Self::new(config, debug)?;
-        builder.ensure_dir_exists(&builder.build_dir)?;
-        builder.build_source().context("Failed to build source")?;
-        builder
-            .process_assets()
-            .context("Failed to process assets")?;
+        builder.ensure_dir_exists(&builder.target)?;
+        builder.process()?;
         builder.generate_pdxinfo()?;
         builder.compile()?;
         Ok(())
@@ -78,77 +70,13 @@ impl<'a> Builder<'a> {
 
     fn destination_path<P: AsRef<Path>>(&'a self, path: P, prefix: &str) -> Result<PathBuf> {
         let mut dest = PathBuf::new();
-        dest.push(&self.build_dir);
+        dest.push(&self.target);
         dest.push(path.as_ref().strip_prefix(prefix)?);
         Ok(dest)
     }
 
-    fn write_lua(filename: &str, source: &str) -> Result<()> {
-        match stylua_lib::format_code(
-            source,
-            stylua_lib::Config::new(),
-            None,
-            stylua_lib::OutputVerification::None,
-        )
-        .context("Failed to format lua")
-        {
-            Ok(formatted) => {
-                fs::write(filename, formatted)?;
-                Ok(())
-            }
-            Err(err) => {
-                // Fail gracefull and write the unformatted code so it can be debugged.
-                fs::write(filename, source)?;
-                Err(err)
-            }
-        }
-    }
-
-    fn build_source(&'a self) -> Result<()> {
-        for entry in glob(&format!("{}/**/*.lua", self.config.directories.src))? {
-            let source = entry?;
-            let destination = self.destination_path(&source, &self.config.directories.src)?;
-
-            self.ensure_dir_exists(destination.parent().unwrap())?;
-
-            fs::copy(source, destination)?;
-        }
-        for entry in glob(&format!("{}/**/*.plua", self.config.directories.src))? {
-            let source = entry?;
-            let mut destination = self.destination_path(&source, &self.config.directories.src)?;
-            destination.set_extension("lua");
-
-            self.ensure_dir_exists(destination.parent().unwrap())?;
-
-            let source_str = source.to_str().unwrap();
-            let contents = fs::read_to_string(source_str)
-                .with_context(|| format!("Error reading {}", source_str))?;
-            let prog = Plua::compile(source_str, &contents)
-                .with_context(|| format!("Error compiling {} metaprogram", source_str))?;
-            let compiled = self
-                .plua
-                .exec(&prog)
-                .with_context(|| format!("Error executing {} metaprogram", source_str));
-            if self.debug {
-                match compiled {
-                    Ok(compiled) => {
-                        Self::write_lua(destination.to_str().unwrap(), &compiled)?;
-                    }
-                    Err(_) => {
-                        let mut meta_dest = destination.clone();
-                        meta_dest.set_extension("meta.lua");
-                        Self::write_lua(meta_dest.to_str().unwrap(), &prog.metaprogram)?;
-                    }
-                }
-            } else {
-                Self::write_lua(destination.to_str().unwrap(), &compiled?)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn process_assets(&'a self) -> Result<()> {
-        for entry in WalkDir::new(&self.config.directories.assets) {
+    fn process(&'a self) -> Result<()> {
+        for entry in WalkDir::new(&self.config.build.source) {
             let mut source_pathbuf = PathBuf::new();
             source_pathbuf.push(entry.unwrap().path());
             let source_path = source_pathbuf.as_path();
@@ -156,7 +84,7 @@ impl<'a> Builder<'a> {
 
             if !source_path.is_dir() {
                 let dest_path =
-                    self.destination_path(source_path_str, &self.config.directories.assets)?;
+                    self.destination_path(source_path_str, &self.config.build.source)?;
                 self.ensure_dir_exists(dest_path.parent().unwrap())?;
 
                 match source_path
@@ -168,7 +96,7 @@ impl<'a> Builder<'a> {
                     }
                     None => {
                         let dest_path =
-                            self.destination_path(source_path, &self.config.directories.assets)?;
+                            self.destination_path(source_path, &self.config.build.source)?;
 
                         fs::copy(source_path, &dest_path).with_context(|| {
                             format!(
@@ -186,7 +114,7 @@ impl<'a> Builder<'a> {
 
     fn generate_pdxinfo(&'a self) -> Result<()> {
         let mut pdxinfo_path = PathBuf::new();
-        pdxinfo_path.push(&self.build_dir);
+        pdxinfo_path.push(&self.target);
         pdxinfo_path.push("pdxinfo");
 
         let pdxinfo = format!(
@@ -213,8 +141,8 @@ buildNumber=1
             PDC,
             &[
                 "-q",
-                self.build_dir.to_str().unwrap(),
-                self.pdx_dir.to_str().unwrap(),
+                self.target.to_str().unwrap(),
+                self.pdx.to_str().unwrap(),
             ],
         )?;
         Ok(())

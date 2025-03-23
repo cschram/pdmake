@@ -3,4 +3,3 @@ author = "John Playdate"
 description = "Example pdmake project"
 bundle_id = "com.pdmake.Example"
 version = "1.0"
-

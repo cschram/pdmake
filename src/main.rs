@@ -4,8 +4,9 @@ mod exec;
 mod processors;
 
 use crate::{build::Builder, config::Config, exec::exec};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use simple_logger::SimpleLogger;
 use std::{fs, path::PathBuf};
 
 #[cfg(target_os = "macos")]
@@ -57,10 +58,12 @@ fn run(pdx_path: &str) -> Result<()> {
 
 #[cfg(not(target_os = "macos"))]
 fn run(pdx_path: &str) -> Result<()> {
-    exec(SIMULATOR_NAME, &[pdx_path])
+    exec(SIMULATOR, &[pdx_path])
 }
 
 fn main() -> Result<()> {
+    SimpleLogger::new().init().unwrap();
+
     let cli = Cli::parse();
     let config = {
         let source = fs::read_to_string(&cli.config)
@@ -73,13 +76,13 @@ fn main() -> Result<()> {
             Builder::build(&config, *debug).context("Error building")?;
         }
         Commands::Clean => {
-            if fs::exists(&config.directories.target)? {
-                fs::remove_dir_all(&config.directories.target)?;
+            if fs::exists(&config.build.target)? {
+                fs::remove_dir_all(&config.build.target)?;
             }
         }
         Commands::Run => {
             let mut pdx_path = PathBuf::new();
-            pdx_path.push(config.directories.target);
+            pdx_path.push(config.build.target);
             pdx_path.push(format!("{}.pdx", config.bundle_id));
             run(pdx_path.to_str().unwrap())?;
         }

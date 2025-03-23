@@ -1,9 +1,15 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use log::{error, info};
-use std::{env, process::Command};
+use std::process::Command;
+
+#[cfg(target_os = "macos")]
+use std::env;
 
 pub(crate) fn exec(cmd: &str, args: &[&str]) -> Result<()> {
-    let output = Command::new(cmd).args(args).output()?;
+    let output = Command::new(cmd)
+        .args(args)
+        .output()
+        .with_context(|| format!("Error executing {}", cmd))?;
     if output.status.success() {
         info!("{}", String::from_utf8(output.stdout)?);
     } else {

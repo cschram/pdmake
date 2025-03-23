@@ -719,7 +719,6 @@ dependencies = [
  "anyhow",
  "clap 4.5.32",
  "clap_derive 4.5.32",
- "glob",
  "log",
  "plua",
  "serde",
