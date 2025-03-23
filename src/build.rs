@@ -1,4 +1,5 @@
 use crate::{
+    cache::Cache,
     config::Config,
     processors::{AsepriteProcessor, AssetProcessor, PluaProcessor},
 };
@@ -23,6 +24,7 @@ pub(crate) struct Builder<'a> {
     target: PathBuf,
     pdx: PathBuf,
     processors: HashMap<String, Box<dyn AssetProcessor>>,
+    cache: Cache,
 }
 
 impl<'a> Builder<'a> {
@@ -42,21 +44,25 @@ impl<'a> Builder<'a> {
         let plua = Box::new(PluaProcessor::new(debug)?);
         processors.insert("plua".to_string(), plua);
 
+        let cache = Cache::new()?;
+
         Ok(Self {
             config,
             _debug: debug,
             target,
             pdx,
             processors,
+            cache,
         })
     }
 
     pub(crate) fn build(config: &'a Config, debug: bool) -> Result<()> {
-        let builder = Self::new(config, debug)?;
+        let mut builder = Self::new(config, debug)?;
         builder.ensure_dir_exists(&builder.target)?;
         builder.process()?;
         builder.generate_pdxinfo()?;
         builder.compile()?;
+        builder.cache.save()?;
         Ok(())
     }
 
@@ -69,21 +75,22 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    fn destination_path<P: AsRef<Path>>(&'a self, path: P, prefix: &str) -> Result<PathBuf> {
+    fn destination_path<P: AsRef<Path>>(&self, path: P, prefix: &str) -> Result<PathBuf> {
         let mut dest = PathBuf::new();
         dest.push(&self.target);
         dest.push(path.as_ref().strip_prefix(prefix)?);
         Ok(dest)
     }
 
-    fn process(&'a self) -> Result<()> {
+    fn process(&mut self) -> Result<()> {
         for entry in WalkDir::new(&self.config.build.source) {
             let mut source_pathbuf = PathBuf::new();
             source_pathbuf.push(entry.unwrap().path());
             let source_path = source_pathbuf.as_path();
             let source_path_str = source_path.to_str().unwrap();
 
-            if !source_path.is_dir() {
+            if !source_path.is_dir() && !self.cache.check(&source_path_str)? {
+                info!("{} changed, processing", &source_path_str);
                 let dest_path =
                     self.destination_path(source_path_str, &self.config.build.source)?;
                 self.ensure_dir_exists(dest_path.parent().unwrap())?;
@@ -108,6 +115,8 @@ impl<'a> Builder<'a> {
                         })?;
                     }
                 }
+
+                self.cache.update(&source_path_str)?;
             }
         }
         Ok(())

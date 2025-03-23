@@ -6,7 +6,7 @@ local character = playdate.graphics.sprite.new(playdate.graphics.image.new("play
 character:moveTo(200, 120)
 character:add()
 
-local characterSpeed <const> = 10
+local characterSpeed <const> = 8
 
 playdate.update = function()
     playdate.graphics.sprite.update()
